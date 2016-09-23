@@ -6,7 +6,7 @@ use DateTime;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 use Doctrine\ODM\MongoDB\SoftDelete\SoftDeleteable;
-use DocumentMapper;
+use ChefsPlate\ODM\Facades\DocumentMapper;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 

@@ -2,8 +2,8 @@
 
 namespace ChefsPlate\ODM\Providers;
 
-use App\DoctrineODM\Types\CarbonDateArrayType;
-use App\DoctrineODM\Types\CarbonDateType;
+use ChefsPlate\DoctrineODM\Types\CarbonDateArrayType;
+use ChefsPlate\DoctrineODM\Types\CarbonDateType;
 use App\Services\DocumentMapperService;
 use Doctrine\Common\Cache\VoidCache;
 use Doctrine\Common\EventManager;
