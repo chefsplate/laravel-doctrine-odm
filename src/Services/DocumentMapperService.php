@@ -32,7 +32,6 @@ class DocumentMapperService extends DocumentManager
         EventManager $event_manager = null,
         $laravel_config = array()
     ) {
-        date_default_timezone_set(DEFAULT_TIMEZONE);
         $manager = $event_manager == null ? new EventManager() : $event_manager;
         parent::__construct($conn, $config, $manager);
 
