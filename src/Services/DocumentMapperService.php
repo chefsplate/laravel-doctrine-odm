@@ -1,5 +1,5 @@
 <?php
-namespace Chefsplate\ODM\Services;
+namespace ChefsPlate\ODM\Services;
 
 use ChefsPlate\ODM\Entities\Model;
 use Doctrine\Common\EventManager;
