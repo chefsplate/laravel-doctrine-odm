@@ -16,6 +16,9 @@
     "doctrine/mongodb-odm": "~1.0",
     "doctrine/mongodb-odm-softdelete": "dev-master"
   },
+  "require-dev": {
+    "barryvdh/laravel-ide-helper": "^2.1"
+  },
   "autoload": {
     "psr-4": {
       "ChefsPlate\\ODM\\": "src/"
