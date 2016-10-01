@@ -14,7 +14,8 @@
     "php": ">=5.4.0",
     "laravel/framework": "5.1.*",
     "doctrine/mongodb-odm": "~1.0",
-    "doctrine/mongodb-odm-softdelete": "dev-master"
+    "doctrine/mongodb-odm-softdelete": "dev-master",
+    "phpdocumentor/reflection-docblock": "^2.0"
   },
   "require-dev": {
     "barryvdh/laravel-ide-helper": "^2.1"
