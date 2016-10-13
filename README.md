@@ -4,6 +4,42 @@ A smart, lightweight Laravel wrapper around the [doctrine/mongodb-odm](https://g
 
 This ODM wrapper is compatible with jensseger's [laravel-mongodb](https://github.com/jenssegers/laravel-mongodb) library, should you want to leverage both Eloquent and Doctrine at the same time. 
  
+Note: a "minimum-stability" of "dev" is currently required for this package.  
+
+Please check out the [chefsplate/laravel-doctrine-odm-example](https://github.com/chefsplate/laravel-doctrine-odm-example) repo for a fully-working example of how this package can be used to create a Doctrine-based API on top of Mongo.
+ 
 ## Requirements
 - PHP 5.4+
 - Laravel 5.x
+- PHP mongo extension (ext-mongo) must be installed: http://php.net/manual/en/mongo.installation.php
+
+## Install
+
+Require the latest version of this package with Composer:
+
+    composer require chefsplate/laravel-doctrine-odm:"0.1.x"
+
+Add the Service Provider to the providers array in config/app.php:
+
+    ChefsPlate\ODM\Providers\DocumentMapperServiceProvider::class,
+    
+Add the facade to your class aliases array in config/app.php:
+
+    'DocumentMapper' => ChefsPlate\ODM\Facades\DocumentMapper::class,
+
+You should now be able to use the **mongodb** driver in config/database.php.
+
+    'mongodb' => array(
+        'driver'   => 'mongodb',
+        'dsn'      => 'mongodb://127.0.0.1:27017',
+        'database' => 'database_name'
+    ),
+
+The format for the DSN is:
+`mongodb://[username:password@]host1[:port1][,host2[:port2:],...]/db`
+
+For more info see:
+ 
+- [Using the PHP Library (PHPLIB)](http://php.net/manual/en/mongodb.tutorial.library.php)
+- [Doctrine MongoDB ODM’s documentation](http://docs.doctrine-project.org/projects/doctrine-mongodb-odm/en/latest/)
+- [chefsplate/laravel-doctrine-odm-example](https://github.com/chefsplate/laravel-doctrine-odm-example) for a fully-working example
