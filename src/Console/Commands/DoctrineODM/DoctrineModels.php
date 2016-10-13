@@ -8,7 +8,7 @@
  * @link      https://github.com/barryvdh/laravel-ide-helper
  */
 
-namespace App\Console\Commands\Miscellaneous;
+namespace ChefsPlate\ODM\Commands;
 
 use Barryvdh\LaravelIdeHelper\Console\ModelsCommand;
 use ChefsPlate\ODM\Entities\Model;
