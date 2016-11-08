@@ -38,8 +38,40 @@ You should now be able to use the **mongodb** driver in config/database.php.
 The format for the DSN is:
 `mongodb://[username:password@]host1[:port1][,host2[:port2:],...]/db`
 
+# IDE helper for generating phpDocumentation
+
+If you're familiar with @barryvdh's IDE helper for generating phpDocumentation (useful for auto-complete), we have built on top of his command generator.
+
+You just need to include it in your list of $commands within `app\Console\Kernel.php`:
+
+    \ChefsPlate\ODM\Commands\DoctrineModelsCommand::class,
+
+## Usage
+
+The default usage will analyze all models under App\Entities and write all annotations to a `_ide_helper_models.php` file.
+
+    php artisan ide-helper:doctrine-models
+
+You can alternatively choose to write annotations directly to the PHP DocBlock class annotations within the PHP files themselves.
+
+If the annotations contain duplicates, you can use the --reset option to replace existing DocBlock annotations:
+
+    php artisan ide-helper:doctrine-models --reset
+    
+Or specifically, to reset a single entity:
+
+    php artisan ide-helper:doctrine-models App\Entities\ModelName --reset
+
+For complete usage on generating helper annotations, use `--help`:
+
+    php artisan ide-helper:doctrine-models --help
+
+
+# References
+
 For more info see:
  
 - [Using the PHP Library (PHPLIB)](http://php.net/manual/en/mongodb.tutorial.library.php)
 - [Doctrine MongoDB ODM’s documentation](http://docs.doctrine-project.org/projects/doctrine-mongodb-odm/en/latest/)
 - [chefsplate/laravel-doctrine-odm-example](https://github.com/chefsplate/laravel-doctrine-odm-example) for a fully-working example
+- [PHP Annotations plug-in for PhpStorm](https://plugins.jetbrains.com/plugin/7320), compatible with Doctrine
