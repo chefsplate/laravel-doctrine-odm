@@ -44,7 +44,7 @@ If you're familiar with @barryvdh's IDE helper for generating phpDocumentation (
 
 You just need to include it in your list of $commands within `app\Console\Kernel.php`:
 
-    \ChefsPlate\ODM\Commands\DoctrineModelsCommand::class,
+    \ChefsPlate\ODM\Console\Commands\DoctrineModelsCommand::class,
 
 ## Usage
 
