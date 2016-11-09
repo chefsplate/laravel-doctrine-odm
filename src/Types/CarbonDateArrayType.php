@@ -17,7 +17,7 @@
  * <http://www.doctrine-project.org>.
  */
 
-namespace ChefsPlate\DoctrineODM\Types;
+namespace ChefsPlate\ODM\Types;
 
 use Doctrine\ODM\MongoDB\MongoDBException;
 use Doctrine\ODM\MongoDB\Types\Type;

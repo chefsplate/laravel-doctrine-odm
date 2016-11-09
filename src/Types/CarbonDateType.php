@@ -17,7 +17,7 @@
  * <http://www.doctrine-project.org>.
  */
 
-namespace ChefsPlate\DoctrineODM\Types;
+namespace ChefsPlate\ODM\Types;
 
 use Carbon\Carbon;
 use DateTime;
