@@ -1,24 +1,28 @@
 <?php
 /**
- * Laravel IDE Helper Generator
+ * Laravel IDE ODM Helper Generator
  *
  * @author    Barry vd. Heuvel <barryvdh@gmail.com>, David Chang <davidchchang@gmail.com>
  * @copyright 2014 Barry vd. Heuvel / Fruitcake Studio (http://www.fruitcakestudio.nl)
  * @license   http://www.opensource.org/licenses/mit-license.php MIT
- * @link      https://github.com/barryvdh/laravel-ide-helper
+ * @link      https://github.com/chefsplate/laravel-doctrine-odm
  */
 
 namespace ChefsPlate\ODM\Console\Commands;
 
-use Barryvdh\LaravelIdeHelper\Console\ModelsCommand;
 use ChefsPlate\ODM\Entities\Model;
 use ChefsPlate\ODM\Facades\DocumentMapper;
+use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
 use phpDocumentor\Reflection\DocBlock;
 use phpDocumentor\Reflection\DocBlock\Context;
 use phpDocumentor\Reflection\DocBlock\Serializer as DocBlockSerializer;
 use phpDocumentor\Reflection\DocBlock\Tag;
 use Symfony\Component\ClassLoader\ClassMapGenerator;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -26,7 +30,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  *
  * @author Barry vd. Heuvel <barryvdh@gmail.com>, David Chang <davidchchang@gmail.com>
  */
-class DoctrineModelsCommand extends ModelsCommand
+class DoctrineModelsCommand extends Command
 {
     /**
      * The console command name.
@@ -41,6 +45,67 @@ class DoctrineModelsCommand extends ModelsCommand
      * @var string
      */
     protected $description = 'Generate autocompletion for Doctrine ODM models';
+
+    /**
+     * @var Filesystem $files
+     */
+    protected $files;
+
+    protected $filename = '_ide_helper_models.php';
+
+    protected $properties = array();
+    protected $methods = array();
+    protected $write = false;
+    protected $dirs = array();
+    protected $reset;
+
+    /**
+     * @param Filesystem $files
+     */
+    public function __construct(Filesystem $files)
+    {
+        parent::__construct();
+        $this->files = $files;
+    }
+
+    /**
+     * Execute the console command.
+     *
+     * @return void
+     */
+    public function fire()
+    {
+        $filename    = $this->option('filename');
+        $this->write = $this->option('write');
+        $this->dirs  = array_merge(
+            $this->laravel['config']->get('ide-helper.model_locations'),
+            $this->option('dir')
+        );
+        $model       = $this->argument('model');
+        $ignore      = $this->option('ignore');
+        $this->reset = $this->option('reset');
+
+        //If filename is default and Write is not specified, ask what to do
+        if (!$this->write && $filename === $this->filename && !$this->option('nowrite')) {
+            if ($this->confirm(
+                "Do you want to overwrite the existing model files? Choose no to write to $filename instead? (Yes/No): "
+            )
+            ) {
+                $this->write = true;
+            }
+        }
+
+        $content = $this->generateDocs($model, $ignore);
+
+        if (!$this->write) {
+            $written = $this->files->put($filename, $content);
+            if ($written !== false) {
+                $this->info("Model information was written to $filename");
+            } else {
+                $this->error("Failed to write model information to $filename");
+            }
+        }
+    }
 
     protected function generateDocs($loadModels, $ignore = '')
     {
@@ -111,17 +176,6 @@ class DoctrineModelsCommand extends ModelsCommand
         return $output;
     }
 
-    /**
-     * Take a string_like_this and return a StringLikeThis
-     *
-     * @param string
-     * @return string
-     */
-    protected function snakeToCamel($val)
-    {
-        return str_replace(' ', '', ucwords(str_replace('_', ' ', $val)));
-    }
-
     protected function loadModels()
     {
         $models = array();
@@ -134,6 +188,194 @@ class DoctrineModelsCommand extends ModelsCommand
             }
         }
         return $models;
+    }
+
+    /**
+     * @param $model Model
+     */
+    private function getPropertiesFromFields($model)
+    {
+        $properties = $model->getModelProperties();
+
+        $metadata = DocumentMapper::getClassMetadata(get_class($model));
+
+        foreach ($properties as $field) {
+            $name = Str::camel($field);
+            if (!empty($name)) {
+                $type = DocumentMapper::getTypeForValue($field, $model, $metadata);
+
+                $this->setProperty($field, $type, true, null);
+
+                // Magic get<name>
+                $this->setMethod(Str::camel("get_" . $name), $type, array());
+
+                // Magic fluent set<name>
+                $this->setMethod(Str::camel("set_" . $name), "\\" . get_class($model), array('$value'));
+            }
+        }
+    }
+
+    /**
+     * @param string $name
+     * @param string|null $type
+     * @param bool|null $read
+     * @param bool|null $write
+     * @param string|null $comment
+     */
+    protected function setProperty($name, $type = null, $read = null, $write = null, $comment = '')
+    {
+        if (!isset($this->properties[$name])) {
+            $this->properties[$name]            = array();
+            $this->properties[$name]['type']    = is_null($type) ? 'mixed' : $type;
+            $this->properties[$name]['read']    = false;
+            $this->properties[$name]['write']   = false;
+            $this->properties[$name]['comment'] = (string)$comment;
+        }
+        if ($type !== null) {
+            $this->properties[$name]['type'] = $type;
+        }
+        if ($read !== null) {
+            $this->properties[$name]['read'] = $read;
+        }
+        if ($write !== null) {
+            $this->properties[$name]['write'] = $write;
+        }
+    }
+
+    protected function setMethod($name, $type = '', $arguments = array())
+    {
+        $methods = array_change_key_case($this->methods, CASE_LOWER);
+
+        if (!isset($methods[strtolower($name)])) {
+            $this->methods[$name]              = array();
+            $this->methods[$name]['type']      = $type;
+            $this->methods[$name]['arguments'] = $arguments;
+        }
+    }
+
+    /**
+     * @param string $class
+     * @return string
+     */
+    protected function createPhpDocs($class)
+    {
+
+        $reflection     = new \ReflectionClass($class);
+        $namespace      = $reflection->getNamespaceName();
+        $classname      = $reflection->getShortName();
+        $originalDoc    = $reflection->getDocComment();
+        $originalPhpdoc = null;
+
+        if ($this->reset) {
+            $phpdoc         = new DocBlock('', new Context($namespace));
+            $originalPhpdoc = new DocBlock($reflection, new Context($namespace));
+        } else {
+            $phpdoc = new DocBlock($reflection, new Context($namespace));
+        }
+
+        if (!$phpdoc->getText()) {
+            $phpdoc->setText($class);
+        }
+
+        if ($this->reset) {
+            // we must add back all the non-generated annotations, otherwise Doctrine will break
+            foreach ($originalPhpdoc->getTags() as $tag) {
+                $name = $tag->getName();
+                if (!in_array($name, ["property", "property-read", "property-write", "method"])) {
+                    $cloned_tag = clone $tag;
+                    $cloned_tag->setDocBlock(null);
+                    $phpdoc->appendTag($cloned_tag);
+                }
+            }
+        }
+
+        $properties = array();
+        $methods    = array();
+        /** @var Tag $tag */
+        foreach ($phpdoc->getTags() as $tag) {
+            $name = $tag->getName();
+            if ($name == "property" || $name == "property-read" || $name == "property-write") {
+                $properties[] = $tag->getVariableName();
+            } elseif ($name == "method") {
+                $methods[] = $tag->getMethodName();
+            }
+        }
+
+        foreach ($this->properties as $name => $property) {
+            $name = "\$$name";
+            if (in_array($name, $properties)) {
+                continue;
+            }
+            if ($property['read'] && $property['write']) {
+                $attr = 'property';
+            } elseif ($property['write']) {
+                $attr = 'property-write';
+            } else {
+                $attr = 'property-read';
+            }
+            $tagLine = trim("@{$attr} {$property['type']} {$name} {$property['comment']}");
+            $tag     = Tag::createInstance($tagLine, $phpdoc);
+            $phpdoc->appendTag($tag);
+        }
+
+        $existing_methods = get_class_methods($class);
+
+        foreach ($this->methods as $name => $method) {
+            if (in_array($name, $methods)) {
+                continue;
+            }
+            // skip this method if we already overrode it with another implementation within the class
+            if (in_array($name, $existing_methods)) {
+                continue;
+            }
+            $arguments  = implode(', ', $method['arguments']);
+            $tag_prefix = $name == "getDeletedAt" ? "@method " : "@method static ";
+            $tag        = Tag::createInstance($tag_prefix . "{$method['type']} {$name}({$arguments})", $phpdoc);
+            $phpdoc->appendTag($tag);
+        }
+
+        // @mixin tag currently not supported by Doctrine annotation parser
+//        if ($this->write && !$phpdoc->getTagsByName('mixin')) {
+//            $phpdoc->appendTag(Tag::createInstance("@mixin \\App\\Entities\\Model", $phpdoc));
+//        }
+
+        $serializer = new DocBlockSerializer();
+        $serializer->getDocComment($phpdoc);
+        $docComment = $serializer->getDocComment($phpdoc);
+
+
+        if ($this->write) {
+            $filename = $reflection->getFileName();
+            $contents = $this->files->get($filename);
+            if ($originalDoc) {
+                $contents = str_replace($originalDoc, $docComment, $contents);
+            } else {
+                $needle  = "class {$classname}";
+                $replace = "{$docComment}\nclass {$classname}";
+                $pos     = strpos($contents, $needle);
+                if ($pos !== false) {
+                    $contents = substr_replace($contents, $replace, $pos, strlen($needle));
+                }
+            }
+            if ($this->files->put($filename, $contents)) {
+                $this->info('Written new phpDocBlock to ' . $filename);
+            }
+        }
+
+        $output =
+            "namespace {$namespace}{\n{$docComment}\n\tclass {$classname} extends \\App\\Entities\\Model {}\n}\n\n";
+        return $output;
+    }
+
+    /**
+     * Take a string_like_this and return a StringLikeThis
+     *
+     * @param string
+     * @return string
+     */
+    protected function snakeToCamel($val)
+    {
+        return str_replace(' ', '', ucwords(str_replace('_', ' ', $val)));
     }
 
     /**
@@ -208,178 +450,198 @@ class DoctrineModelsCommand extends ModelsCommand
     }
 
     /**
-     * @param string $name
-     * @param string|null $type
-     * @param bool|null $read
-     * @param bool|null $write
-     * @param string|null $comment
+     * Get the console command arguments.
+     *
+     * @return array
      */
-    protected function setProperty($name, $type = null, $read = null, $write = null, $comment = '')
+    protected function getArguments()
     {
-        if (!isset($this->properties[$name])) {
-            $this->properties[$name]            = array();
-            $this->properties[$name]['type']    = is_null($type) ? 'mixed' : $type;
-            $this->properties[$name]['read']    = false;
-            $this->properties[$name]['write']   = false;
-            $this->properties[$name]['comment'] = (string)$comment;
-        }
-        if ($type !== null) {
-            $this->properties[$name]['type'] = $type;
-        }
-        if ($read !== null) {
-            $this->properties[$name]['read'] = $read;
-        }
-        if ($write !== null) {
-            $this->properties[$name]['write'] = $write;
-        }
+        return array(
+            array('model', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Which models to include', array()),
+        );
     }
 
-    protected function setMethod($name, $type = '', $arguments = array())
+    /**
+     * Get the console command options.
+     *
+     * @return array
+     */
+    protected function getOptions()
     {
-        $methods = array_change_key_case($this->methods, CASE_LOWER);
+        return array(
+            array('filename', 'F', InputOption::VALUE_OPTIONAL, 'The path to the helper file', $this->filename),
+            array('dir', 'D', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'The model dir', array()),
+            array('write', 'W', InputOption::VALUE_NONE, 'Write to Model file'),
+            array('nowrite', 'N', InputOption::VALUE_NONE, 'Don\'t write to Model file'),
+            array('reset', 'R', InputOption::VALUE_NONE, 'Remove the original phpdocs instead of appending'),
+            array('ignore', 'I', InputOption::VALUE_OPTIONAL, 'Which models to ignore', ''),
+        );
+    }
 
-        if (!isset($methods[strtolower($name)])) {
-            $this->methods[$name]              = array();
-            $this->methods[$name]['type']      = $type;
-            $this->methods[$name]['arguments'] = $arguments;
+    /**
+     * @param \Illuminate\Database\Eloquent\Model $model
+     */
+    protected function getPropertiesFromMethods($model)
+    {
+        $methods = get_class_methods($model);
+        if ($methods) {
+            foreach ($methods as $method) {
+                if (Str::startsWith($method, 'get') && Str::endsWith(
+                        $method,
+                        'Attribute'
+                    ) && $method !== 'getAttribute'
+                ) {
+                    //Magic get<name>Attribute
+                    $name = Str::snake(substr($method, 3, -9));
+                    if (!empty($name)) {
+                        $this->setProperty($name, null, true, null);
+                    }
+                } elseif (Str::startsWith($method, 'set') && Str::endsWith(
+                        $method,
+                        'Attribute'
+                    ) && $method !== 'setAttribute'
+                ) {
+                    //Magic set<name>Attribute
+                    $name = Str::snake(substr($method, 3, -9));
+                    if (!empty($name)) {
+                        $this->setProperty($name, null, null, true);
+                    }
+                } elseif (Str::startsWith($method, 'scope') && $method !== 'scopeQuery') {
+                    //Magic set<name>Attribute
+                    $name = Str::camel(substr($method, 5));
+                    if (!empty($name)) {
+                        $reflection = new \ReflectionMethod($model, $method);
+                        $args       = $this->getParameters($reflection);
+                        //Remove the first ($query) argument
+                        array_shift($args);
+                        $this->setMethod($name, '\Illuminate\Database\Query\Builder|\\' . $reflection->class, $args);
+                    }
+                } elseif (!method_exists('Illuminate\Database\Eloquent\Model', $method)
+                    && !Str::startsWith($method, 'get')
+                ) {
+                    //Use reflection to inspect the code, based on Illuminate/Support/SerializableClosure.php
+                    $reflection = new \ReflectionMethod($model, $method);
+
+                    $file = new \SplFileObject($reflection->getFileName());
+                    $file->seek($reflection->getStartLine() - 1);
+
+                    $code = '';
+                    while ($file->key() < $reflection->getEndLine()) {
+                        $code .= $file->current();
+                        $file->next();
+                    }
+                    $code  = trim(preg_replace('/\s\s+/', '', $code));
+                    $begin = strpos($code, 'function(');
+                    $code  = substr($code, $begin, strrpos($code, '}') - $begin + 1);
+
+                    foreach (array(
+                                 'hasMany',
+                                 'hasManyThrough',
+                                 'belongsToMany',
+                                 'hasOne',
+                                 'belongsTo',
+                                 'morphOne',
+                                 'morphTo',
+                                 'morphMany',
+                                 'morphToMany'
+                             ) as $relation) {
+                        $search = '$this->' . $relation . '(';
+                        if ($pos = stripos($code, $search)) {
+                            //Resolve the relation's model to a Relation object.
+                            $relationObj = $model->$method();
+
+                            if ($relationObj instanceof Relation) {
+                                $relatedModel = '\\' . get_class($relationObj->getRelated());
+
+                                $relations = ['hasManyThrough', 'belongsToMany', 'hasMany', 'morphMany', 'morphToMany'];
+                                if (in_array($relation, $relations)) {
+                                    //Collection or array of models (because Collection is Arrayable)
+                                    $this->setProperty(
+                                        $method,
+                                        $this->getCollectionClass($relatedModel) . '|' . $relatedModel . '[]',
+                                        true,
+                                        null
+                                    );
+                                } elseif ($relation === "morphTo") {
+                                    // Model isn't specified because relation is polymorphic
+                                    $this->setProperty(
+                                        $method,
+                                        '\Illuminate\Database\Eloquent\Model|\Eloquent',
+                                        true,
+                                        null
+                                    );
+                                } else {
+                                    //Single model is returned
+                                    $this->setProperty($method, $relatedModel, true, null);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
     /**
-     * @param string $class
+     * Get the parameters and format them correctly
+     *
+     * @param $method
+     * @return array
+     */
+    public function getParameters($method)
+    {
+        //Loop through the default values for paremeters, and make the correct output string
+        $params            = array();
+        $paramsWithDefault = array();
+        /** @var \ReflectionParameter $param */
+        foreach ($method->getParameters() as $param) {
+            $paramStr = '$' . $param->getName();
+            $params[] = $paramStr;
+            if ($param->isOptional() && $param->isDefaultValueAvailable()) {
+                $default = $param->getDefaultValue();
+                if (is_bool($default)) {
+                    $default = $default ? 'true' : 'false';
+                } elseif (is_array($default)) {
+                    $default = 'array()';
+                } elseif (is_null($default)) {
+                    $default = 'null';
+                } elseif (is_int($default)) {
+                    //$default = $default;
+                } else {
+                    $default = "'" . trim($default) . "'";
+                }
+                $paramStr .= " = $default";
+            }
+            $paramsWithDefault[] = $paramStr;
+        }
+        return $paramsWithDefault;
+    }
+
+    /**
+     * Determine a model classes' collection type.
+     *
+     * @see http://laravel.com/docs/eloquent-collections#custom-collections
+     * @param string $className
      * @return string
      */
-    protected function createPhpDocs($class)
+    private function getCollectionClass($className)
     {
-
-        $reflection  = new \ReflectionClass($class);
-        $namespace   = $reflection->getNamespaceName();
-        $classname   = $reflection->getShortName();
-        $originalDoc = $reflection->getDocComment();
-        $originalPhpdoc = null;
-
-        if ($this->reset) {
-            $phpdoc = new DocBlock('', new Context($namespace));
-            $originalPhpdoc = new DocBlock($reflection, new Context($namespace));
-        } else {
-            $phpdoc = new DocBlock($reflection, new Context($namespace));
+        // Return something in the very very unlikely scenario the model doesn't
+        // have a newCollection() method.
+        if (!method_exists($className, 'newCollection')) {
+            return '\Illuminate\Database\Eloquent\Collection';
         }
 
-        if (!$phpdoc->getText()) {
-            $phpdoc->setText($class);
-        }
-
-        if ($this->reset) {
-            // we must add back all the non-generated annotations, otherwise Doctrine will break
-            foreach ($originalPhpdoc->getTags() as $tag) {
-                $name = $tag->getName();
-                if (!in_array($name, ["property", "property-read", "property-write", "method"])) {
-                    $cloned_tag = clone $tag;
-                    $cloned_tag->setDocBlock(null);
-                    $phpdoc->appendTag($cloned_tag);
-                }
-            }
-        }
-
-        $properties = array();
-        $methods    = array();
-        foreach ($phpdoc->getTags() as $tag) {
-            $name = $tag->getName();
-            if ($name == "property" || $name == "property-read" || $name == "property-write") {
-                $properties[] = $tag->getVariableName();
-            } elseif ($name == "method") {
-                $methods[] = $tag->getMethodName();
-            }
-        }
-
-        foreach ($this->properties as $name => $property) {
-            $name = "\$$name";
-            if (in_array($name, $properties)) {
-                continue;
-            }
-            if ($property['read'] && $property['write']) {
-                $attr = 'property';
-            } elseif ($property['write']) {
-                $attr = 'property-write';
-            } else {
-                $attr = 'property-read';
-            }
-            $tagLine = trim("@{$attr} {$property['type']} {$name} {$property['comment']}");
-            $tag     = Tag::createInstance($tagLine, $phpdoc);
-            $phpdoc->appendTag($tag);
-        }
-
-        $existing_methods = get_class_methods($class);
-
-        foreach ($this->methods as $name => $method) {
-            if (in_array($name, $methods)) {
-                continue;
-            }
-            // skip this method if we already overrode it with another implementation within the class
-            if (in_array($name, $existing_methods)) {
-                continue;
-            }
-            $arguments = implode(', ', $method['arguments']);
-            $tag_prefix = $name == "getDeletedAt" ? "@method " : "@method static ";
-            $tag       = Tag::createInstance($tag_prefix . "{$method['type']} {$name}({$arguments})", $phpdoc);
-            $phpdoc->appendTag($tag);
-        }
-
-        // @mixin tag currently not supported by Doctrine annotation parser
-//        if ($this->write && !$phpdoc->getTagsByName('mixin')) {
-//            $phpdoc->appendTag(Tag::createInstance("@mixin \\App\\Entities\\Model", $phpdoc));
-//        }
-
-        $serializer = new DocBlockSerializer();
-        $serializer->getDocComment($phpdoc);
-        $docComment = $serializer->getDocComment($phpdoc);
-
-
-        if ($this->write) {
-            $filename = $reflection->getFileName();
-            $contents = $this->files->get($filename);
-            if ($originalDoc) {
-                $contents = str_replace($originalDoc, $docComment, $contents);
-            } else {
-                $needle  = "class {$classname}";
-                $replace = "{$docComment}\nclass {$classname}";
-                $pos     = strpos($contents, $needle);
-                if ($pos !== false) {
-                    $contents = substr_replace($contents, $replace, $pos, strlen($needle));
-                }
-            }
-            if ($this->files->put($filename, $contents)) {
-                $this->info('Written new phpDocBlock to ' . $filename);
-            }
-        }
-
-        $output =
-            "namespace {$namespace}{\n{$docComment}\n\tclass {$classname} extends \\App\\Entities\\Model {}\n}\n\n";
-        return $output;
+        /** @var \Illuminate\Database\Eloquent\Model $model */
+        $model = new $className;
+        return '\\' . get_class($model->newCollection());
     }
 
     /**
-     * @param $model Model
+     * @return bool
      */
-    private function getPropertiesFromFields($model)
+    protected function hasCamelCaseModelProperties()
     {
-        $properties = $model->getModelProperties();
-
-        $metadata = DocumentMapper::getClassMetadata(get_class($model));
-
-        foreach ($properties as $field) {
-            $name = Str::camel($field);
-            if (!empty($name)) {
-                $type = DocumentMapper::getTypeForValue($field, $model, $metadata);
-
-                $this->setProperty($field, $type, true, null);
-
-                // Magic get<name>
-                $this->setMethod(Str::camel("get_" . $name), $type, array());
-
-                // Magic fluent set<name>
-                $this->setMethod(Str::camel("set_" . $name), "\\" . get_class($model), array('$value'));
-            }
-        }
+        return $this->laravel['config']->get('ide-helper.model_camel_case_properties', false);
     }
 }
