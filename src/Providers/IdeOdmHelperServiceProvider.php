@@ -46,7 +46,7 @@ class IdeOdmHelperServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $configPath = __DIR__ . '/../config/ide-odm-helper.php';
+        $configPath = __DIR__ . '/../../config/ide-odm-helper.php';
         $this->mergeConfigFrom($configPath, 'ide-helper');
 
         $this->app['command.ide-helper.doctrine-models'] = $this->app->share(
