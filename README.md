@@ -10,8 +10,9 @@ Please check out the [chefsplate/laravel-doctrine-odm-example](https://github.co
  
 ## Requirements
 - PHP 5.4+
-- Laravel 5.x
+- Laravel 5.3+ (for Laravel 5.1 - 5.2, please use the 5.1 branch)
 - PHP mongo extension (ext-mongo) must be installed: http://php.net/manual/en/mongo.installation.php
+    - On a Mac, the easiest way to install this extension is through `brew`: `brew install php56` followed by `brew install php56-mongo`
 
 ## Install
 
