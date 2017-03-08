@@ -1,4 +1,4 @@
-# Laravel Doctrine 2 ODM for MongoDB
+# Laravel Doctrine 2 ODM for MongoDB [WIP]
 
 A smart, lightweight Laravel wrapper around the [doctrine/mongodb-odm](https://github.com/doctrine/mongodb-odm) document mapper.
 
@@ -39,14 +39,54 @@ You should now be able to use the **mongodb** driver in config/database.php.
 The format for the DSN is:
 `mongodb://[username:password@]host1[:port1][,host2[:port2:],...]/db`
 
+# Eloquent-like Wrapper Methods
+
+## `first` and `where`
+
+`first` is an Eloquent-like way of constructing queries. It uses the arrow (associative array) notation of specifying parameters: e.g.
+
+    $user = User::first([
+        'username' => 'davidchchang'
+    ]);
+    
+There is an additional caveat here though; the `first` and `where` wrapper methods only work with non-entities such as strings, booleans, numbers, and regexes. If you want greater control (or you are referencing entities), you'll need to use the Doctrine ODM query builder API: http://docs.doctrine-project.org/projects/doctrine-mongodb-odm/en/latest/reference/query-builder-api.html
+
+The `first` wrapper will automatically construct the query and fetch the first result returned, so if you want to use specific query builder methods, you'll need to use `where` method instead.
+
+    $recent_user_tasks = Task::where([
+        'status' => 'Active'
+    ])->field('created_at')->gte(new \MongoDate($date->getTimestamp()))
+      ->field('user')->references($user)
+      ->getQuery()->execute();
+
+Both `first` and `where` allow you to define an array of projections you would like returned. For example, if you only care about the username and email address fields being set on the returned models, you can specify this in the second parameter:
+
+    $users_named_david = User::where([
+        'name' => new \MongoRegex('/^David/i')
+    ], ['username', 'email']);
+
+## `find`
+
+`find` will return the entity that corresponds to a specific ID.
+ 
+    $user = User::find("davidchchang");
+
+# ODM Helpers [coming soon]
+
+## OdmHelper
+
+`convertCarbonToMongoDate` will convert a Carbon date to a Mongo date:
+
+    OdmHelper::convertCarbonToMongoDate(Carbon::parse('2016-11-17'))
+
 # IDE helper for generating phpDocumentation
 
 If you're familiar with @barryvdh's IDE helper for generating phpDocumentation (useful for auto-complete), we have built on top of his command generator.
 
-You just need to include it in your list of $commands within `app\Console\Kernel.php`:
+To get started, add the Service Provider to the providers array in config/app.php:
 
-    \ChefsPlate\ODM\Console\Commands\DoctrineModelsCommand::class,
-
+    ChefsPlate\ODM\Providers\IdeOdmHelperServiceProvider::class,
+    
 ## Usage
 
 The default usage will analyze all models under App\Entities and write all annotations to a `_ide_helper_models.php` file.
