@@ -1,6 +1,7 @@
 # Laravel Doctrine 2 ODM for MongoDB [WIP]
 
-A smart, lightweight Laravel wrapper around the [doctrine/mongodb-odm](https://github.com/doctrine/mongodb-odm) document mapper.
+A smart, lightweight Laravel wrapper around the [Doctrine ODM](https://github.com/doctrine/mongodb-odm) document mapper. 
+Features convenient features like soft deletions, automatic create and modification times, and consistent and flexible response formats useful when developing APIs.  
 
 This ODM wrapper is compatible with jensseger's [laravel-mongodb](https://github.com/jenssegers/laravel-mongodb) library, should you want to leverage both Eloquent and Doctrine at the same time. 
  
@@ -43,15 +44,26 @@ The format for the DSN is:
 
 ## `first` and `where`
 
-`first` is an Eloquent-like way of constructing queries. It uses the arrow (associative array) notation of specifying parameters: e.g.
+`first` is an Eloquent-like way of constructing queries. It uses the arrow (associative array) notation of specifying parameters:
 
     $user = User::first([
         'username' => 'davidchchang'
     ]);
     
-There is an additional caveat here though; the `first` and `where` wrapper methods only work with non-entities such as strings, booleans, numbers, and regexes. If you want greater control (or you are referencing entities), you'll need to use the Doctrine ODM query builder API: http://docs.doctrine-project.org/projects/doctrine-mongodb-odm/en/latest/reference/query-builder-api.html
+The `first` wrapper will automatically construct the query and fetch the first result returned, so if you want to retrieve more than one document or if you want to use specific query builder methods, you'll need to use `where` method instead.
 
-The `first` wrapper will automatically construct the query and fetch the first result returned, so if you want to use specific query builder methods, you'll need to use `where` method instead.
+    $users_named_david_chang = User::where([
+        'first_name' => 'David',
+        'last_name' => 'Chang'
+    ])->getQuery()->execute();
+    
+    foreach ($users_named_david_chang as $user) {
+        // do something with $user here
+    }
+
+There is an additional caveat with using these wrapper methods; the `first` and `where` wrapper methods only work with non-entities such as strings, booleans, numbers, and regexes. 
+If you want to use any (non-equals) [conditional operators](http://docs.doctrine-project.org/projects/doctrine-mongodb-odm/en/latest/reference/query-builder-api.html#conditional-operators), 
+you'll need to chain them before executing the query (note: `first` does not support chaining since it executes the query immediately).
 
     $recent_user_tasks = Task::where([
         'status' => 'Active'
@@ -62,7 +74,7 @@ The `first` wrapper will automatically construct the query and fetch the first r
 Both `first` and `where` allow you to define an array of projections you would like returned. For example, if you only care about the username and email address fields being set on the returned models, you can specify this in the second parameter:
 
     $users_named_david = User::where([
-        'name' => new \MongoRegex('/^David/i')
+        'first_name' => new \MongoRegex('/^David/i')
     ], ['username', 'email']);
 
 ## `find`
