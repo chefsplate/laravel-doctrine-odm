@@ -1,7 +1,7 @@
 # Laravel Doctrine 2 ODM for MongoDB [WIP]
 
 A smart, lightweight Laravel wrapper around the [Doctrine ODM](https://github.com/doctrine/mongodb-odm) document mapper. 
-Features convenient features like soft deletions, automatic create and modification times, and consistent and flexible response formats useful when developing APIs.  
+Convenient features like soft deletions, automatic create and modification times, and consistent and flexible response formats ()useful when developing APIs) are built in.  
 
 This ODM wrapper is compatible with jensseger's [laravel-mongodb](https://github.com/jenssegers/laravel-mongodb) library, should you want to leverage both Eloquent and Doctrine at the same time. 
  
