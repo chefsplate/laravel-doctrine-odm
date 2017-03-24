@@ -181,7 +181,7 @@ and email address, we could do something like:
 
 If your model references other models, you can form complex response formats that restrict what is returned by the referenced models.
 For example, if a `Project` model contains a reference to the `User` model, you can specify which user fields you want 
-returned (again, all are returned by default).
+returned (again, all fields for each model are returned by default).
 
 Within `Project.php`:
 
@@ -198,8 +198,8 @@ This allows for some very powerful nested response formats while maintaining sim
 
 ## Step Two: Inform your controller endpoints of which response formats to use
  
-Now that the formats have been defined in the models, you can now specify which models you would like to use when 
-returning the instance back to the front-end.
+Now that the formats have been defined in the models, you can specify which models you would like to use when 
+returning the payload back to the front-end.
  
 Within your controller:
  
@@ -218,7 +218,7 @@ and the `Comment` model references the `User` model. Since the response format f
 is assumed. If the `default` response format is not defined within `Comment.php`, then all fields will be returned. 
 
 However, since we specified the response format to use for `User`s, our API response formatter will format the `User` 
-entity within `Comment` using the `email` response format automatically. The `listing_view` on `Project` (as we described 
+entity referenced within `Comment` using the `email` response format automatically. The `listing_view` on `Project` (as we described 
 above) already indicates how it would like to format its `User`s references, so it is not formatted using the `email` 
 response format.
 
