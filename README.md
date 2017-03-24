@@ -8,14 +8,26 @@ This ODM wrapper is compatible with jensseger's [laravel-mongodb](https://github
 Note: a "minimum-stability" of "dev" is currently required for this package.  
 
 Please check out the [chefsplate/laravel-doctrine-odm-example](https://github.com/chefsplate/laravel-doctrine-odm-example) repo for a fully-working example of how this package can be used to create a Doctrine-based API on top of Mongo.
- 
-## Requirements
+
+Table of contents
+-----------------
+* [Requirements](#requirements)
+* [Installation](#installation)
+* [Using the Eloquent-like wrapper methods](#eloquent-like)
+* [IDE helper](#ide-helper)
+* [Response Formats](#response-formats)
+* [References](#references)
+
+
+Requirements
+------------
 - PHP 5.4+
 - Laravel 5.3+ (for Laravel 5.1 - 5.2, please use the 5.1 branch)
 - PHP mongo extension (ext-mongo) must be installed: http://php.net/manual/en/mongo.installation.php
     - On a Mac, the easiest way to install this extension is through `brew`: `brew install php56` followed by `brew install php56-mongo`
 
-## Install
+Installation
+------------
 
 Require the latest version of this package with Composer:
 
@@ -41,7 +53,8 @@ You should now be able to use the **mongodb** driver in config/database.php.
 The format for the DSN is:
 `mongodb://[username:password@]host1[:port1][,host2[:port2:],...]/db`
 
-# Eloquent-like Wrapper Methods
+Eloquent-like Wrapper Methods
+-----------------------------
 
 ## `first` and `where`
 
@@ -85,7 +98,8 @@ Both `first` and `where` allow you to define an array of projections you would l
     $user = User::find("davidchchang");
 
 
-# IDE helper for generating phpDocumentation
+IDE helper for generating phpDocumentation
+------------------------------------------
 
 If you're familiar with @barryvdh's IDE helper for generating phpDocumentation (useful for auto-complete), we have built on top of his command generator.
 
@@ -114,7 +128,8 @@ For complete usage on generating helper annotations, use `--help`:
     php artisan ide-helper:doctrine-models --help
 
 
-# Response Formats
+Response Formats
+----------------
 
 If you are using our [Laravel API Response Formatter](https://github.com/chefsplate/laravel-api-response-formatter) (highly recommended with this package), you can leverage the built-in
 response format support, which takes customizes which fields will be returned to the front-end from your API.
