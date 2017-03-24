@@ -132,14 +132,14 @@ Response Formats
 ----------------
 
 If you are using our [Laravel API Response Formatter](https://github.com/chefsplate/laravel-api-response-formatter) (highly recommended with this package), you can leverage the built-in
-response format support, which takes customizes which fields will be returned to the front-end from your API.
+response format support, which allows you to customize which fields you want returned to the front-end from your APIs.
 
 There are two simple steps you can do to make use of response formats in your code.
 
 ## Step One: Define your response formats
 
-First, we define which fields in the model we want to have returned. For example, let's assume your user has a 
-`id`, `username`, `first_name`, `last_name`, `email` and `password` fields. Upon returning a user object to the front-end, 
+First, we define which fields in the model we want to have returned. For example, let's assume your user has the following fields: 
+`id`, `username`, `first_name`, `last_name`, `email` and `password`. Upon returning a user object to the front-end, 
 we don't ever want to return the `password` field. This can be done by creating a `default` response format within the 
 `User.php` model:
 
@@ -147,7 +147,7 @@ we don't ever want to return the `password` field. This can be done by creating 
         'default' => ['password'],
     ]
 
-The response format is a blacklist array of fields you _don't_ want in the response. By default, all fields are returned.
+The response format is a blacklist array of fields you **_don't_** want in the response. By default, all fields are returned.
 
 So if you don't need the first name, last name or password, you would specify:
 
@@ -156,9 +156,10 @@ So if you don't need the first name, last name or password, you would specify:
     ]
 
 Note that this gets pretty cumbersome if there are more fields you don't want then the fields that you do want. As an
-alternative, you can specify to exclude all fields, and include only the ones you want, so it behaves more like a whitelist.
+alternative, you can specify to exclude all fields using the `*` symbol, and include only the ones you want using the special `|except:` syntax. 
+This makes the response format behave more like a whitelist.
 
-The syntax is similar to:
+As an example:
 
     'default'   => ['*|except:first_name,email'],
 
