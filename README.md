@@ -84,17 +84,6 @@ Both `first` and `where` allow you to define an array of projections you would l
  
     $user = User::find("davidchchang");
 
-# Response Formats
-
-If you also use our [Laravel API Response Formatter](https://github.com/chefsplate/laravel-api-response-formatter), you can also specify custom response formats that you want to use
-
-# ODM Helpers [coming soon]
-
-## OdmHelper
-
-`convertCarbonToMongoDate` will convert a Carbon date to a Mongo date:
-
-    OdmHelper::convertCarbonToMongoDate(Carbon::parse('2016-11-17'))
 
 # IDE helper for generating phpDocumentation
 
@@ -216,6 +205,15 @@ However, since we specified the response format to use for `User`s, our API resp
 entity within `Comment` using the `email` response format automatically. The `listing_view` on `Project` (as we described 
 above) already indicates how it would like to format its `User`s references, so it is not formatted using the `email` 
 response format.
+
+
+# ODM Helpers [coming soon]
+
+## OdmHelper
+
+`convertCarbonToMongoDate` will convert a Carbon date to a Mongo date:
+
+    OdmHelper::convertCarbonToMongoDate(Carbon::parse('2016-11-17'))
 
 
 # References
