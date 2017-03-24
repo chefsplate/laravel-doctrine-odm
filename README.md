@@ -13,8 +13,8 @@ Table of contents
 -----------------
 * [Requirements](#requirements)
 * [Installation](#installation)
-* [Using the Eloquent-like wrapper methods](#eloquent-like)
-* [IDE helper](#ide-helper)
+* [Using the Eloquent-like wrapper methods](#eloquent-like-wrapper-methods)
+* [IDE helper for generating phpDocumentation](#ide-helper-for-generating-phpdocumentation)
 * [Response Formats](#response-formats)
 * [References](#references)
 
@@ -222,7 +222,8 @@ above) already indicates how it would like to format its `User`s references, so 
 response format.
 
 
-# ODM Helpers [coming soon]
+ODM Helpers [coming soon]
+-------------------------
 
 ## OdmHelper
 
@@ -231,7 +232,8 @@ response format.
     OdmHelper::convertCarbonToMongoDate(Carbon::parse('2016-11-17'))
 
 
-# References
+References
+----------
 
 For more info see:
  
