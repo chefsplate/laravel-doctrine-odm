@@ -34,15 +34,15 @@ Require the latest version of this package with Composer:
 
     composer require chefsplate/laravel-doctrine-odm:"0.1.x"
 
-Add the Service Provider to the providers array in config/app.php:
+Add the Service Provider to the providers array in `config/app.php`:
 
     ChefsPlate\ODM\Providers\DocumentMapperServiceProvider::class,
     
-Add the facade to your class aliases array in config/app.php:
+Add the facade to your class aliases array in `config/app.php`:
 
     'DocumentMapper' => ChefsPlate\ODM\Facades\DocumentMapper::class,
 
-You should now be able to use the **mongodb** driver in config/database.php.
+You should now be able to use the **mongodb** driver in `config/database.php`.
 
     'mongodb' => array(
         'driver'   => 'mongodb',
@@ -85,6 +85,8 @@ you'll need to chain them before executing the query (note: `first` does not sup
       ->field('user')->references($user)
       ->getQuery()->execute();
 
+### Projections
+
 Both `first` and `where` allow you to define an array of projections you would like returned. For example, if you only care about the username and email address fields being set on the returned models, you can specify this in the second parameter:
 
     $users_named_david = User::where([
@@ -101,7 +103,7 @@ Both `first` and `where` allow you to define an array of projections you would l
 IDE helper for generating phpDocumentation
 ------------------------------------------
 
-If you're familiar with @barryvdh's IDE helper for generating phpDocumentation (useful for auto-complete), we have built on top of his command generator.
+If you're familiar with [@barryvdh's IDE helper](https://github.com/barryvdh/laravel-ide-helper) for generating phpDocumentation (useful for auto-complete), we have built on top of his command generator.
 
 To get started, add the Service Provider to the providers array in config/app.php:
 
@@ -109,13 +111,13 @@ To get started, add the Service Provider to the providers array in config/app.ph
     
 ## Usage
 
-The default usage will analyze all models under App\Entities and write all annotations to a `_ide_helper_models.php` file.
+The default usage will analyze all models under `App\Entities` and write all annotations to a `_ide_helper_models.php` file.
 
     php artisan ide-helper:doctrine-models
 
 You can alternatively choose to write annotations directly to the PHP DocBlock class annotations within the PHP files themselves.
 
-If the annotations contain duplicates, you can use the --reset option to replace existing DocBlock annotations:
+If the annotations contain duplicates, you can use the `--reset` option to replace existing DocBlock annotations:
 
     php artisan ide-helper:doctrine-models --reset
     
@@ -134,7 +136,7 @@ Response Formats
 If you are using our [Laravel API Response Formatter](https://github.com/chefsplate/laravel-api-response-formatter) (highly recommended with this package), you can leverage the built-in
 response format support, which allows you to customize which fields you want returned to the front-end from your APIs.
 
-There are two simple steps you can do to make use of response formats in your code.
+There are two simple steps you'll need to follow to make use of response formats in your code.
 
 ## Step One: Define your response formats
 
