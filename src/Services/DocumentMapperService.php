@@ -64,11 +64,6 @@ class DocumentMapperService extends DocumentManager
         return $result;
     }
 
-    public function getSoftDeleteManager()
-    {
-        return $this->sdm;
-    }
-
     /**
      * @param $repository string entity class name
      * @param array $conditions a mapping of field names and their expected value
@@ -101,7 +96,35 @@ class DocumentMapperService extends DocumentManager
     }
 
     /**
-     * @param Model $document
+     * Perform a Doctrine query, but do not execute it.
+     *
+     * @param $repository string entity class name
+     * @param array $conditions fields to test
+     * @param array|string $projections a field name string (or an array of field name strings) to return in the
+     *  projection
+     * @param bool $include_deleted whether to include deleted results
+     * @return \Doctrine\ODM\MongoDB\Query\Builder
+     */
+    public function where($repository, $conditions = array(), $projections = array(), $include_deleted = false)
+    {
+        $query = self::createQueryBuilder($repository);
+        if ($conditions) {
+            foreach ($conditions as $condition_field => $condition_value) {
+                $query->field($condition_field)->equals($condition_value);
+            }
+        }
+        if ($this->soft_deletes_enabled && !$include_deleted) {
+            $query->field($this->getSoftDeleteManager()->getConfiguration()->getDeletedFieldName())
+                ->exists(false);
+        }
+        if ($projections) {
+            $query->select($projections);
+        }
+        return $query;
+    }
+
+    /**
+     * @param \ChefsPlate\ODM\Entities\Model $document
      */
     public function persistAndFlush($document)
     {
@@ -148,33 +171,6 @@ class DocumentMapperService extends DocumentManager
         parent::flush($document, $options);
     }
 
-    /**
-     * Perform a Doctrine query, but do not execute it.
-     *
-     * @param $repository string entity class name
-     * @param array $conditions fields to test
-     * @param array|string $projections a field name string (or an array of field name strings) to return in the
-     *  projection
-     * @param bool $include_deleted whether to include deleted results
-     * @return \Doctrine\ODM\MongoDB\Query\Builder
-     */
-    public function where($repository, $conditions = array(), $projections = array(), $include_deleted = false)
-    {
-        $query = self::createQueryBuilder($repository);
-        if ($conditions) {
-            foreach ($conditions as $condition_field => $condition_value) {
-                $query->field($condition_field)->equals($condition_value);
-            }
-        }
-        if ($this->soft_deletes_enabled && !$include_deleted) {
-            $query->field($this->getSoftDeleteManager()->getConfiguration()->getDeletedFieldName())
-                ->exists(false);
-        }
-        if ($projections) {
-            $query->select($projections);
-        }
-        return $query;
-    }
 
     public function restore($document)
     {
@@ -196,8 +192,6 @@ class DocumentMapperService extends DocumentManager
         $this->delete($document);
     }
 
-    // TODO: we may need to override getDocumentCollections() as well
-
     public function delete($document)
     {
         if ($this->soft_deletes_enabled) {
@@ -209,6 +203,7 @@ class DocumentMapperService extends DocumentManager
         }
     }
 
+    // TODO: we may need to override getDocumentCollections() as well
     public function getDocumentCollection($classname)
     {
         $embedded_collections = config('doctrine.embedded_collections');
@@ -224,76 +219,6 @@ class DocumentMapperService extends DocumentManager
             return $collection;
         }
         return parent::getDocumentCollection($classname);
-    }
-
-    public function setSoftDeletesEnabled($enabled = true)
-    {
-        $this->soft_deletes_enabled = $enabled;
-    }
-
-    /**
-     * Helper function to return the specific type for each annotated field.
-     *
-     * @param $field string
-     * @param $model Model
-     * @param $metadata \Doctrine\Common\Persistence\Mapping\ClassMetadata
-     * @return null|string
-     */
-    public function getTypeForValue($field, $model, $metadata = null)
-    {
-        if (is_null($metadata)) {
-            $metadata = self::getClassMetadata(get_class($model));
-        }
-
-        $value = $metadata->getTypeOfField($field);
-
-        if (is_null($value)) {
-            return "\\" . get_class($model);
-        }
-
-        $reserved_fieldnames = $model->getReservedProperties();
-        if (in_array($field, $reserved_fieldnames)) {
-            return "\\" . \DateTime::class;
-        }
-        switch ($value) {
-            case 'carbon':
-            case 'date':
-                $type = "\\" . \Carbon\Carbon::class;
-                break;
-            case 'carbon_array':
-                $type = "\\" . \Carbon\Carbon::class . "[]";
-                break;
-            case 'string':
-                $type = 'string';
-                break;
-            case 'id':
-                $type = "\\" . \MongoId::class;
-                break;
-            case 'int':
-                $type = 'int';
-                break;
-            case 'collection':
-            case 'hash':
-                $type = 'array';
-                break;
-            case 'one':
-                $type = "\\" . $metadata->getAssociationTargetClass($field);
-                break;
-            case 'many':
-                $type = $metadata->getAssociationTargetClass($field) ?
-                    "\\" . $metadata->getAssociationTargetClass($field) . "[]" :
-                    "array";
-                break;
-            default:
-                $type = 'mixed';
-                break;
-        }
-
-        if ($type == null) {
-            $type = "\\" . get_class($model);
-        }
-
-        return $type;
     }
 
     /**
@@ -318,5 +243,88 @@ class DocumentMapperService extends DocumentManager
         }
 
         return $class;
+    }
+
+    public function getSoftDeleteManager()
+    {
+        return $this->sdm;
+    }
+
+    public function setSoftDeletesEnabled($enabled = true)
+    {
+        $this->soft_deletes_enabled = $enabled;
+    }
+
+    /**
+     * Helper function to return the specific type for each annotated field.
+     *
+     * @param $field string
+     * @param $model \ChefsPlate\ODM\Entities\Model
+     * @param $metadata \Doctrine\Common\Persistence\Mapping\ClassMetadata
+     * @return null|string
+     */
+    public function getTypeForValue($field, $model, $metadata = null)
+    {
+        if (is_null($metadata)) {
+            $metadata = self::getClassMetadata(get_class($model));
+        }
+
+        $value = $metadata->getTypeOfField($field);
+
+        if (is_null($value)) {
+            return $this->formatFQCN(get_class($model));
+        }
+
+        $reserved_fieldnames = $model->getReservedProperties();
+        if (in_array($field, $reserved_fieldnames)) {
+            return $this->formatFQCN(\DateTime::class);
+        }
+        switch ($value) {
+            case 'carbon':
+            case 'date':
+                $type = $this->formatFQCN(\Carbon\Carbon::class);
+                break;
+            case 'carbon_array':
+                $type = $this->formatFQCN(\Carbon\Carbon::class) . "[]";
+                break;
+            case 'string':
+                $type = 'string';
+                break;
+            case 'id':
+                $type = $this->formatFQCN(\MongoId::class);
+                break;
+            case 'int':
+                $type = 'int';
+                break;
+            case 'collection':
+            case 'hash':
+                $type = 'array';
+                break;
+            case 'one':
+                $type = $this->formatFQCN($metadata->getAssociationTargetClass($field));
+                break;
+            case 'many':
+                $type = $metadata->getAssociationTargetClass($field) ?
+                    $this->formatFQCN($metadata->getAssociationTargetClass($field)) . "[]" :
+                    "array";
+                break;
+            default:
+                $type = 'mixed';
+                break;
+        }
+
+        if ($type == null) {
+            $type = $this->formatFQCN(get_class($model));
+        }
+
+        return $type;
+    }
+
+    public function formatFQCN($class)
+    {
+        // the Doctrine annotation may have already been fully qualified, so we need to remove any double-leading
+        // slashes
+        $formatted = ltrim($class, "\\");
+        return "\\" . $formatted;
     }
 }
