@@ -42,16 +42,29 @@ Add the facade to your class aliases array in `config/app.php`:
 
     'DocumentMapper' => ChefsPlate\ODM\Facades\DocumentMapper::class,
 
-You should now be able to use the **mongodb** driver in `config/database.php`.
+Ensure you have connection details for the **mongodb** driver setup in `config/database.php`.
+See `vendor/chefsplate/laravel-odm/config/database.php` for a more complete example.
 
-    'mongodb' => array(
-        'driver'   => 'mongodb',
-        'dsn'      => 'mongodb://127.0.0.1:27017',
-        'database' => 'database_name'
-    ),
+    'mongodb' => [
+        'driver'        => 'mongodb',
+        'dsn'           => 'mongodb://localhost:27017',
+        'database'      => 'mydb', // Default DB to perform queries against (not authenticate against)
+        'retryConnect'  => 2, // Number of connection retry attempts before failing (doctrine feature)
+        'retryQuery'    => 1, // Number of query retry attempts before failing (doctrine feature)
+        'options'       => [
+    
+        ],
+        'driverOptions' => [
 
+        ]
+    ]
 The format for the DSN is:
 `mongodb://[username:password@]host1[:port1][,host2[:port2:],...]/db`
+
+Copy the default doctrine and ide-odm-helper config files to your app's config
+`cp vendor/chefsplate/laravel-odm/config/doctrine.php config/doctrine.php`
+`cp vendor/chefsplate/laravel-odm/config/ide-odm-helper.php config/ide-odm-helper.php`
+Modify to suit your environment
 
 Eloquent-like Wrapper Methods
 -----------------------------
