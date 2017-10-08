@@ -30,7 +30,7 @@
   ],
   "require": {
     "php": ">=5.4.0",
-    "laravel/framework": "5.3.*|5.4.*",
+    "laravel/framework": "5.1.*|5.2.*|5.3.*|5.4.*",
     "doctrine/mongodb-odm": "^1.1",
     "chefsplate/mongodb-odm-softdelete": "^0.1",
     "phpdocumentor/reflection-docblock": "^3.1"
