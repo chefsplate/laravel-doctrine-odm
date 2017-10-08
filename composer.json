@@ -14,12 +14,26 @@
       "email": "brent.manza@chefsplate.com"
     }
   ],
+  "repositories": [
+    {
+      "type": "package",
+      "package": {
+        "name": "chefsplate/mongodb-odm-softdelete",
+        "version": "0.1.1",
+        "source": {
+          "url": "https://github.com/chefsplate/mongodb-odm-softdelete.git",
+          "type": "git",
+          "reference": "origin/master"
+        }
+      }
+    }
+  ],
   "require": {
     "php": ">=5.4.0",
-    "laravel/framework": "~5.1",
-    "doctrine/mongodb-odm": "~1.0",
-    "doctrine/mongodb-odm-softdelete": "dev-master",
-    "phpdocumentor/reflection-docblock": "^2.0"
+    "laravel/framework": "5.1.*|5.2.*|5.3.*|5.4.*",
+    "doctrine/mongodb-odm": "^1.1",
+    "chefsplate/mongodb-odm-softdelete": "^0.1",
+    "phpdocumentor/reflection-docblock": "^3.1"
   },
   "autoload": {
     "psr-4": {

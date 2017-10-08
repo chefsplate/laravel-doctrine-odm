@@ -1,3 +1,5 @@
+# Created by .ignore support plugin (hsz.mobi)
+### Laravel template
 vendor/
 node_modules/
 
@@ -6,9 +8,12 @@ bootstrap/compiled.php
 app/storage/
 
 # Laravel 5 & Lumen specific
-bootstrap/cache/
-storage/
+public/storage
+storage/*.key
 .env.*.php
 .env.php
 .env
-.env.example
+
+# Rocketeer PHP task runner and deployment package. https://github.com/rocketeers/rocketeer
+.rocketeer/
+
