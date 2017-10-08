@@ -69,6 +69,7 @@ class Model implements SoftDeleteable, Jsonable, Arrayable
 
     /** @var array */
     protected static $response_formats = [
+        // If the Chefs Plate response formatter (https://github.com/chefsplate/laravel-api-response-formatter) is used,
         // each model can define its own formats that are supported when toJson is called on it
         // e.g. 'format_name' => ['field to unset 1', 'field to unset 2', ... ]
         // also supported:
