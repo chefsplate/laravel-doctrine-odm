@@ -2,6 +2,8 @@
 /**
  * Laravel IDE ODM Helper Generator
  *
+ * @deprecated This command will be removed once magic methods are no longer supported on the base model.
+ *
  * @author    Barry vd. Heuvel <barryvdh@gmail.com>, David Chang <davidchchang@gmail.com>
  * @copyright 2014 Barry vd. Heuvel / Fruitcake Studio (http://www.fruitcakestudio.nl)
  * @license   http://www.opensource.org/licenses/mit-license.php MIT
