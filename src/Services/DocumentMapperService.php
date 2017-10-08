@@ -2,6 +2,7 @@
 namespace ChefsPlate\ODM\Services;
 
 use ChefsPlate\ODM\Entities\Model;
+use App\Exceptions\BadMethodCallException;
 use Doctrine\Common\EventManager;
 use Doctrine\MongoDB\Connection;
 use Doctrine\ODM\MongoDB\Configuration;
@@ -32,6 +33,8 @@ class DocumentMapperService extends DocumentManager
         EventManager $event_manager = null,
         $laravel_config = array()
     ) {
+        // TODO: determine from settings; use UTC as default
+        date_default_timezone_set(DEFAULT_TIMEZONE);
         $manager = $event_manager == null ? new EventManager() : $event_manager;
         parent::__construct($conn, $config, $manager);
 
@@ -171,6 +174,16 @@ class DocumentMapperService extends DocumentManager
         parent::flush($document, $options);
     }
 
+    /**
+     * Flush persisted documents and changes to Mongo
+     *
+     * @param object $document
+     */
+    public function flushAndClear($document = null)
+    {
+        self::flush($document);
+        self::clear(get_class($document));
+    }
 
     public function restore($document)
     {
@@ -178,7 +191,7 @@ class DocumentMapperService extends DocumentManager
             $this->sdm->restore($document);
             $this->sdm->flush();
         } else {
-            throw new \BadMethodCallException('Soft deletes are not enabled. Enable soft deletes to restore documents');
+            throw BadMethodCallException::create(ERR300_SOFT_DELETES_DISABLED);
         }
     }
 
